@@ -1,0 +1,1 @@
+{"name":"low-stock-block","private":true,"version":"1.0.0","scripts":{"dev":"shopify app dev","deploy":"shopify app deploy","config:link":"shopify app config link","info":"shopify app info"},"devDependencies":{"@shopify/cli":"latest","@shopify/theme":"latest"}}
