@@ -1,0 +1,6 @@
+api_version = "2026-07"
+
+[[extensions]]
+name = "Low Stock Scarcity Counter"
+handle = "low-stock-block"
+type = "theme"
