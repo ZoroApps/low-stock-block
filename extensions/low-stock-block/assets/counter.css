@@ -1,0 +1,128 @@
+.low-stock-counter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 16px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  color: #261b1b;
+}
+
+.low-stock-counter *,
+.low-stock-counter *::before,
+.low-stock-counter *::after {
+  box-sizing: border-box;
+}
+
+.low-stock-counter__pulse {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #d71920;
+  box-shadow: 0 0 0 0 rgba(215, 25, 32, 0.34);
+  animation: pulse 1.65s ease-in-out infinite;
+}
+
+.low-stock-counter__content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.low-stock-counter__text {
+  display: block;
+  width: 100%;
+  color: currentColor;
+  font-size: clamp(14px, 1.45rem, 16px);
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.low-stock-counter__text strong {
+  color: #b31217;
+  font-weight: 800;
+}
+
+.low-stock-counter__bar {
+  display: block;
+  width: min(180px, 100%);
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(38, 27, 27, 0.12);
+}
+
+.low-stock-counter__bar-fill {
+  display: block;
+  width: var(--low-stock-progress, 42%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d71920 0%, #ff6a3d 100%);
+  transition: width 420ms ease;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(215, 25, 32, 0.38);
+    transform: scale(1);
+  }
+
+  55% {
+    box-shadow: 0 0 0 8px rgba(215, 25, 32, 0);
+    transform: scale(1.08);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(215, 25, 32, 0);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .low-stock-counter__pulse {
+    animation: none;
+  }
+
+  .low-stock-counter__bar-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 749px) {
+  .low-stock-counter {
+    width: 100%;
+    max-width: 100%;
+    margin: 12px 0 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .low-stock-counter__content {
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .low-stock-counter__text {
+    width: 100%;
+    max-width: 100%;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .low-stock-counter__bar {
+    width: 100%;
+    max-width: 220px;
+  }
+}
