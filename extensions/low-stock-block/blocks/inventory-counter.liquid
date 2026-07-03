@@ -1,0 +1,173 @@
+{{ 'counter.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign selected_variant = product.selected_or_first_available_variant
+  assign native_stock_count = 0
+  assign has_native_inventory = false
+
+  if selected_variant and selected_variant.inventory_management and selected_variant.inventory_policy != 'continue'
+    assign native_stock_count = selected_variant.inventory_quantity | default: 0
+    if native_stock_count > 0
+      assign has_native_inventory = true
+    endif
+  endif
+
+  assign fallback_start = block.settings.fallback_start | default: 7
+  assign fallback_floor = block.settings.fallback_floor | default: 2
+  assign threshold = block.settings.low_stock_threshold | default: 12
+  assign display_stock = native_stock_count
+
+  unless has_native_inventory
+    assign display_stock = fallback_start
+  endunless
+-%}
+
+{%- if product and selected_variant -%}
+  <div
+    class="low-stock-counter"
+    id="LowStockCounter-{{ block.id }}"
+    data-low-stock-counter
+    data-product-id="{{ product.id }}"
+    data-variant-id="{{ selected_variant.id }}"
+    data-has-native-inventory="{{ has_native_inventory }}"
+    data-native-stock="{{ native_stock_count }}"
+    data-start-count="{{ fallback_start }}"
+    data-floor-count="{{ fallback_floor }}"
+    data-low-stock-threshold="{{ threshold }}"
+    data-countdown-interval="{{ block.settings.countdown_interval | default: 2200 }}"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="low-stock-counter__pulse" aria-hidden="true"></span>
+
+    <div class="low-stock-counter__content">
+      <span class="low-stock-counter__text" data-low-stock-text>
+        Hurry! Only <strong data-low-stock-count>{{ display_stock }}</strong> items left in stock
+      </span>
+
+      <span class="low-stock-counter__bar" aria-hidden="true">
+        <span
+          class="low-stock-counter__bar-fill"
+          data-low-stock-bar
+          style="--low-stock-progress: {% if threshold > 0 %}{{ display_stock | times: 100 | divided_by: threshold | at_most: 100 | at_least: 8 }}{% else %}30{% endif %}%;"
+        ></span>
+      </span>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('LowStockCounter-{{ block.id }}');
+      if (!root || root.dataset.lowStockReady === 'true') return;
+
+      root.dataset.lowStockReady = 'true';
+
+      const countNode = root.querySelector('[data-low-stock-count]');
+      const barNode = root.querySelector('[data-low-stock-bar]');
+      const textNode = root.querySelector('[data-low-stock-text]');
+      const hasNativeInventory = root.dataset.hasNativeInventory === 'true';
+      const nativeStock = Number.parseInt(root.dataset.nativeStock || '0', 10);
+      const startCount = Math.max(Number.parseInt(root.dataset.startCount || '7', 10), 1);
+      const floorCount = Math.max(Number.parseInt(root.dataset.floorCount || '2', 10), 0);
+      const threshold = Math.max(Number.parseInt(root.dataset.lowStockThreshold || '12', 10), 1);
+      const interval = Math.max(Number.parseInt(root.dataset.countdownInterval || '2200', 10), 1200);
+      const storageKey = `low-stock-counter:${root.dataset.productId}:${root.dataset.variantId}`;
+
+      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+      const updateCounter = (value) => {
+        const stock = Math.max(Number.parseInt(value, 10) || 0, 0);
+        const noun = stock === 1 ? 'item' : 'items';
+        const progress = `${clamp(Math.round((stock / threshold) * 100), 8, 100)}%`;
+
+        if (countNode) countNode.textContent = stock;
+        if (textNode) textNode.setAttribute('aria-label', `Hurry! Only ${stock} ${noun} left in stock`);
+        if (barNode) barNode.style.setProperty('--low-stock-progress', progress);
+      };
+
+      if (hasNativeInventory && nativeStock > 0) {
+        updateCounter(nativeStock);
+        return;
+      }
+
+      let sessionCount = startCount;
+
+      try {
+        const cachedCount = window.sessionStorage.getItem(storageKey);
+        if (cachedCount !== null) {
+          sessionCount = clamp(Number.parseInt(cachedCount, 10) || startCount, floorCount, startCount);
+        } else {
+          window.sessionStorage.setItem(storageKey, String(sessionCount));
+        }
+      } catch (error) {
+        sessionCount = startCount;
+      }
+
+      updateCounter(sessionCount);
+
+      const countdown = window.setInterval(() => {
+        if (sessionCount <= floorCount) {
+          window.clearInterval(countdown);
+          return;
+        }
+
+        sessionCount -= 1;
+        updateCounter(sessionCount);
+
+        try {
+          window.sessionStorage.setItem(storageKey, String(sessionCount));
+        } catch (error) {
+          window.clearInterval(countdown);
+        }
+      }, interval);
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Low stock counter",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "low_stock_threshold",
+      "label": "Low stock threshold",
+      "min": 3,
+      "max": 25,
+      "step": 1,
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "fallback_start",
+      "label": "Fallback starting stock",
+      "min": 3,
+      "max": 15,
+      "step": 1,
+      "default": 7
+    },
+    {
+      "type": "range",
+      "id": "fallback_floor",
+      "label": "Fallback minimum stock",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "countdown_interval",
+      "label": "Fallback countdown speed",
+      "min": 1200,
+      "max": 6000,
+      "step": 200,
+      "default": 2200,
+      "unit": "ms"
+    }
+  ]
+}
+{% endschema %}
